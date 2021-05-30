@@ -1,3 +1,13 @@
+"""
+Fabio Angeletti 2021
+fabio.angeletti89@gmail.com
+
+HOW TO USE:
+    adapt CHIA_LOCATION, FARMER_KEY, POOL_KEY
+    run the script
+    done
+"""
+
 import sys
 import os
 import time
@@ -5,8 +15,8 @@ import psutil
 import multiprocessing
 import shutil
 
-PLOT_TEMP_SIZE_GIB = 11.7  # 239
-PLOT_FINAL_SIZE_GIB = 13.7  # 101.3
+PLOT_TEMP_SIZE_GIB = 239
+PLOT_FINAL_SIZE_GIB = 101.3
 
 CHIA_LOCATION = (
     "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
