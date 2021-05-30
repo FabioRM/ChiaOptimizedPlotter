@@ -213,6 +213,11 @@ def generate_parallel_processes(
     max_parallel_processes = min(
         max_parallel_plots_plotting_devices, max_parallel_plots_calculator
     )
+
+    if max_parallel_processes == 0:
+        print("Your calculator cannot run a single plotting process")
+        return 0
+
     plots_per_process = int(number_of_plots_to_do / max_parallel_processes)
     remaining_plots = int(number_of_plots_to_do % max_parallel_processes)
     print(
@@ -280,6 +285,9 @@ if __name__ == "__main__":
     parallel_processes = generate_parallel_processes(
         plotting_drives_capabilities, storage_drives_capabilities, cpu_ram_capabilities
     )
+
+    if parallel_processes == 0:
+        sys.exit(0)
 
     for script in parallel_processes["parallel_processes_commands"]:
         p = multiprocessing.Process(target=run, args=(script,))
