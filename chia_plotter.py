@@ -15,7 +15,7 @@ import psutil
 import multiprocessing
 import shutil
 
-PLOT_TEMP_SIZE_GIB = 239
+PLOT_TEMP_SIZE_GIB = 23.9
 PLOT_FINAL_SIZE_GIB = 101.3
 
 CHIA_LOCATION = (
@@ -154,7 +154,7 @@ def retrieve_storage_drives_capabilities(
         % total_available_storage_drives_space_gib
     )
     print(
-        "Total available space on storage drives after temp files: %.2f GiB"
+        "Total available space on storage drives after plots: %.2f GiB"
         % total_remaining_space_after_temp_gib
     )
     print("Total number of possible plots: %d" % total_number_of_plots)
