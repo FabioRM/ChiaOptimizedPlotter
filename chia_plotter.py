@@ -2,6 +2,9 @@
 Fabio Angeletti 2021
 fabio.angeletti89@gmail.com
 
+Donations (XCH):  xch164xm4mweuerf8zsf4s2e9nqx4df7ffvfcjcv0dxfva3hhjgg7x6s6sctqr
+Donations (ADA):  addr1qxmz3fg5p6hu076yn4z3mv8fdnj7vc4l2q5zqmgsde3zz20yyrrtcmynwfz8lp80nlgxw4tane4grjsajz2a9ddxdmuqnts63g
+
 HOW TO USE:
     adapt CHIA_LOCATION, FARMER_KEY, POOL_KEY
     run the script
