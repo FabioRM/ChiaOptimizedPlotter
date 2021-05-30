@@ -18,7 +18,7 @@ import psutil
 import multiprocessing
 import shutil
 
-PLOT_TEMP_SIZE_GIB = 23.9
+PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 
 CHIA_LOCATION = (
