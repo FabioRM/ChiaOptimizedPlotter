@@ -5,34 +5,63 @@ fabio.angeletti89@gmail.com
 Donations (XCH):  xch164xm4mweuerf8zsf4s2e9nqx4df7ffvfcjcv0dxfva3hhjgg7x6s6sctqr
 Donations (ADA):  addr1qxmz3fg5p6hu076yn4z3mv8fdnj7vc4l2q5zqmgsde3zz20yyrrtcmynwfz8lp80nlgxw4tane4grjsajz2a9ddxdmuqnts63g
 
-HOW TO USE:
-    adapt CHIA_LOCATION, FARMER_KEY, POOL_KEY
-    run the script
-    done
+This python script allows to optimize the amount of parallel plotting processes for CHIA (XCH) mining.
+
+It works as follows:
+    1 - clean the temporary folder for plotting (this will destroy any file inside)
+    2 - evaluate the amount of free space into the plotting drives (they should be fast SSDs)
+    3 - evaluate the amount of free space into the storage drives (for plots storage)
+    4 - evaluate CPU and RAM capabilities (number of cores, available RAM)
+    5 - generate the correct number of processes and their launch commands
+    6 - open a shell for each process and run it
+    7 - done
+
+HOW TO USE THE SCRIPT:
+    1 - configure the script setting up 5 constants:
+        - PLOTTING_DRIVES
+        - STORAGE_DRIVES
+        - CHIA_LOCATION
+        - FARMER_KEY
+        - POOL_KEY
+    2 - run the script
+    3 - check the plotting progress from the shells
+    4 - done
+
+IF THE SCRIPT FAILS TO LAUNCH:
+    check the console output, keep in mind that possibly you need to install some dependencies (like shutil, psutil)
+
+ADVANCED USERS:
+    feel free to customize the script, keep an eye on the PROCESS_INTERVAL_SECONDS. you can use this variable to
+    adapt the interval between one process launch and the next. ideally you should set this equal to the time needed
+    by you hardware to transfer one plot from a plotting drive to a storage drive. this way you will never have more
+    than one transfer at a time and thus shorter periods of waste. rule of thumb:
+        USB 3.0 drives: about 10 minutes (PROCESS_INTERVAL_SECONDS = 600)
+        USB 2.0 drives: about 40 minutes (PROCESS_INTERVAL_SECONDS = 2400)
 """
 
-import sys
-import os
-import time
-import psutil
-import multiprocessing
-import shutil
+import sys, os, time
+import multiprocessing, subprocess
+import shutil, psutil
 
-PLOT_TEMP_SIZE_GIB = 239
-PLOT_FINAL_SIZE_GIB = 101.3
-
+# configuration constants. these MUST be configured according to your mining machine, the chia software installed
+# and also the ssds and hdds installed
+PLOTTING_DRIVES = ["C:/"]  # example ["C:/", "D:/"]
+STORAGE_DRIVES = ["D:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
 CHIA_LOCATION = (
     "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
 )
 FARMER_KEY = "a3d6fd875db16e7ccc98ffda929779c1abf9ae852674c5ec7de630defa73852894f131620dafc33874408c8e842ad606"
 POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e25008587845317fe24fffbfe3182"
+
+
+# constants - only advanced users should change them
+PROCESS_INTERVAL_SECONDS = 0
 TEMP_FOLDERS_PREFIX = "chia_plot_temp"
+PLOT_TEMP_SIZE_GIB = 239
+PLOT_FINAL_SIZE_GIB = 101.3
 K_FACTOR = 32
 THREADS_PER_PLOT = 2
 RAM_GIB_PER_PLOT = 4000
-
-PLOTTING_DRIVES = ["C:/", "D:/"]
-STORAGE_DRIVES = ["E:/"]
 
 
 def clean_temporary_folders(
@@ -277,7 +306,8 @@ def generate_parallel_processes(
 
 def run(script, executable_location=CHIA_LOCATION):
     print("Launching process: %s" % script)
-    os.system(os.path.join(executable_location, script))
+    # subprocess.call("start TIMEOUT /T 10", shell=True)
+    subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
 
 
 if __name__ == "__main__":
@@ -295,7 +325,12 @@ if __name__ == "__main__":
     for script in parallel_processes["parallel_processes_commands"]:
         p = multiprocessing.Process(target=run, args=(script,))
         p.start()
+        time.sleep(PROCESS_INTERVAL_SECONDS)
     p.join()
+
+    print(
+        "\nThe script will now exit, check the processes within their respective shells"
+    )
 
 """
 print(plotting_drives_capabilities)
