@@ -57,7 +57,7 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 # constants - only advanced users should change them
 PROCESS_INTERVAL_SECONDS = 0
 TEMP_FOLDERS_PREFIX = "chia_plot_temp"
-PLOT_TEMP_SIZE_GIB = 23.9
+PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 K_FACTOR = 32
 THREADS_PER_PLOT = 2
@@ -273,14 +273,7 @@ def generate_parallel_processes(
         storage_drives_assignments[0]["assigned_processes"] += 1
         current_process += 1
 
-    print(plotting_drives_capabilities[1])
-    print()
-    print("storage_drives_assignments")
-    print(storage_drives_assignments)
-    print()
-
     # calculate temp plotting folders
-    plotting_drives_assignments = plotting_drives_capabilities[1]
     temp_folders = []
     counter = 0
     while len(temp_folders) < max_parallel_processes:
@@ -321,10 +314,11 @@ def generate_parallel_processes(
                 "The storage drive %s will have no process assigned"
                 % storage_drive_assignments["storage_drive"]
             )
+    print()
 
-    print(temp_folders)
-    print(dest_folders)
-    print(process_plots)
+    # print(temp_folders)
+    # print(dest_folders)
+    # print(process_plots)
 
     parallel_processes_commands = []
     for i in range(max_parallel_processes):
