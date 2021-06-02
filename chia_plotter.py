@@ -45,8 +45,8 @@ import shutil, psutil
 
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
-PLOTTING_DRIVES = ["C:/"]  # example ["C:/", "D:/"]
-STORAGE_DRIVES = ["D:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
+PLOTTING_DRIVES = ["C:/", "D:/"]  # example ["C:/", "D:/"]
+STORAGE_DRIVES = ["C:/", "E:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
 CHIA_LOCATION = (
     "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
 )
@@ -57,7 +57,7 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 # constants - only advanced users should change them
 PROCESS_INTERVAL_SECONDS = 0
 TEMP_FOLDERS_PREFIX = "chia_plot_temp"
-PLOT_TEMP_SIZE_GIB = 239
+PLOT_TEMP_SIZE_GIB = 23.9
 PLOT_FINAL_SIZE_GIB = 101.3
 K_FACTOR = 32
 THREADS_PER_PLOT = 2
@@ -145,7 +145,7 @@ def retrieve_storage_drives_capabilities(
     storage_drives_capabilities = []
     total_available_storage_drives_space_gib = 0
     total_number_of_plots = 0
-    total_remaining_space_after_temp_gib = 0
+    total_remaining_space_after_plots_gib = 0
 
     for storage_drive in storage_drives:
         drive_available_space_gib = psutil.disk_usage(storage_drive).free / (2 ** 30)
@@ -154,7 +154,7 @@ def retrieve_storage_drives_capabilities(
             drive_available_space_gib - drive_number_of_plots * plot_final_size_gib
         )
         total_available_storage_drives_space_gib += drive_available_space_gib
-        total_remaining_space_after_temp_gib += drive_available_space_after_plots_gib
+        total_remaining_space_after_plots_gib += drive_available_space_after_plots_gib
         total_number_of_plots += drive_number_of_plots
 
         storage_drives_capabilities.append(
@@ -177,7 +177,7 @@ def retrieve_storage_drives_capabilities(
 
     cumulative_capabilities = {
         "total_available_storage_drives_space_gib": total_available_storage_drives_space_gib,
-        "total_remaining_space_after_temp_gib": total_remaining_space_after_temp_gib,
+        "total_remaining_space_after_plots_gib": total_remaining_space_after_plots_gib,
         "total_number_of_plots": total_number_of_plots,
     }
 
@@ -187,7 +187,7 @@ def retrieve_storage_drives_capabilities(
     )
     print(
         "Total available space on storage drives after plots: %.2f GiB"
-        % total_remaining_space_after_temp_gib
+        % total_remaining_space_after_plots_gib
     )
     print("Total number of possible plots: %d" % total_number_of_plots)
     print()
@@ -250,32 +250,81 @@ def generate_parallel_processes(
         print("Your calculator cannot run a single plotting process")
         return 0
 
-    plots_per_process = int(number_of_plots_to_do / max_parallel_processes)
-    remaining_plots = int(number_of_plots_to_do % max_parallel_processes)
     print(
-        "Given CPU, RAM and plotting space limitations, this calculator can make %d parallel plots"
+        "Given CPU, RAM and plotting space limitations, this calculator can make %d parallel plots\n"
         % max_parallel_processes
     )
-    print()
-    single_process_plots = []
-    for _ in range(max_parallel_processes):
-        single_process_plots.append(plots_per_process)
-    for i in range(remaining_plots):
-        single_process_plots[i] += 1
-    print("Assigned plots per process:", single_process_plots)
 
-    temp_folders = []
-    dest_folders = []
-    for i in range(max_parallel_processes):
-        j = i % len(plotting_drives_capabilities[1])
-        k = i % len(storage_drives_capabilities[1])
-        temp_folder = os.path.join(
-            plotting_drives_capabilities[1][j]["plotting_drive"],
-            "%s%d" % (temp_folder_prefix, i),
+    # assign processes for each storage devices, they must be proportional to the free space available
+    for storage_drive_capabilities in storage_drives_capabilities[1]:
+        storage_drive_capabilities["percentage_of_plots"] = (
+            storage_drive_capabilities["drive_number_of_plots"] / number_of_plots_to_do
         )
-        dest_folder = storage_drives_capabilities[1][k]["storage_drive"]
-        temp_folders.append(temp_folder)
-        dest_folders.append(dest_folder)
+        storage_drive_capabilities["assigned_processes"] = 0
+
+    storage_drives_assignments = storage_drives_capabilities[1]
+    current_process = 0
+    while current_process < max_parallel_processes:
+        storage_drives_assignments = sorted(
+            storage_drives_assignments,
+            key=lambda x: x["drive_number_of_plots"] / (x["assigned_processes"] + 1),
+            reverse=True,
+        )
+        storage_drives_assignments[0]["assigned_processes"] += 1
+        current_process += 1
+
+    print(plotting_drives_capabilities[1])
+    print()
+    print("storage_drives_assignments")
+    print(storage_drives_assignments)
+    print()
+
+    # calculate temp plotting folders
+    plotting_drives_assignments = plotting_drives_capabilities[1]
+    temp_folders = []
+    counter = 0
+    while len(temp_folders) < max_parallel_processes:
+        j = counter % len(plotting_drives_capabilities[1])
+        if plotting_drives_capabilities[1][j]["drive_parallel_plots"] > 0:
+            plotting_drives_capabilities[1][j]["drive_parallel_plots"] -= 1
+            temp_folders.append(plotting_drives_capabilities[1][j]["plotting_drive"])
+        counter += 1
+
+    # calculate destination folders and number of plots per process
+    dest_folders = []
+    process_plots = []
+    for storage_drive_assignments in storage_drives_assignments:
+        if storage_drive_assignments["assigned_processes"] > 0:
+            print(
+                "The storage drive %s will have %d process(es) assigned"
+                % (
+                    storage_drive_assignments["storage_drive"],
+                    storage_drive_assignments["assigned_processes"],
+                )
+            )
+            plots_per_process = int(
+                storage_drive_assignments["drive_number_of_plots"]
+                / storage_drive_assignments["assigned_processes"]
+            )
+            remaining_plots = int(
+                storage_drive_assignments["drive_number_of_plots"]
+                % storage_drive_assignments["assigned_processes"]
+            )
+            for process in range(storage_drive_assignments["assigned_processes"]):
+                dest_folders.append(storage_drive_assignments["storage_drive"])
+                if process < remaining_plots:
+                    process_plots.append(plots_per_process + 1)
+                else:
+                    process_plots.append(plots_per_process)
+        else:
+            print(
+                "The storage drive %s will have no process assigned"
+                % storage_drive_assignments["storage_drive"]
+            )
+
+    print(temp_folders)
+    print(dest_folders)
+    print(process_plots)
 
     parallel_processes_commands = []
     for i in range(max_parallel_processes):
@@ -283,7 +332,7 @@ def generate_parallel_processes(
             "chia plots create -k %d -n %d -r %d -t %s -d %s -f %s -p %s"
             % (
                 k_factor,
-                single_process_plots[i],
+                process_plots[i],
                 threads_per_plot,
                 temp_folders[i],
                 dest_folders[i],
@@ -298,7 +347,7 @@ def generate_parallel_processes(
 
     return {
         "parallel_processes_commands": parallel_processes_commands,
-        "single_process_plots": single_process_plots,
+        "single_process_plots": process_plots,
         "temp_folders": temp_folders,
         "dest_folders": dest_folders,
     }
@@ -307,7 +356,7 @@ def generate_parallel_processes(
 def run(script, executable_location=CHIA_LOCATION):
     print("Launching process: %s" % script)
     # subprocess.call("start TIMEOUT /T 10", shell=True)
-    subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
+    # subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
 
 
 if __name__ == "__main__":
