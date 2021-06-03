@@ -364,7 +364,7 @@ def generate_parallel_processes(
 
 def run(script, executable_location=CHIA_LOCATION):
     print("Launching process: %s" % script)
-    # subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
+    subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
 
 
 if __name__ == "__main__":
