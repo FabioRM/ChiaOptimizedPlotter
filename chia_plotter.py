@@ -46,7 +46,7 @@ import shutil, psutil
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
 PLOTTING_DRIVES = ["C:/", "D:/"]  # example ["C:/", "D:/"]
-STORAGE_DRIVES = ["C:/", "E:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
+STORAGE_DRIVES = ["E:/", "F:/", "G:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
 CHIA_LOCATION = (
     "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
 )
@@ -90,34 +90,39 @@ def retrieve_plotting_drives_capabilities(
     total_remaining_plotting_drives_space_after_temp_gib = 0
 
     for plotting_drive in plotting_drives:
-        drive_available_space_gib = psutil.disk_usage(plotting_drive).free / (2 ** 30)
-        drive_parallel_plots = int(drive_available_space_gib / plot_temp_size_gib)
-        drive_available_space_after_temp_gib = (
-            drive_available_space_gib - drive_parallel_plots * plot_temp_size_gib
-        )
-        total_available_plotting_drives_space_gib += drive_available_space_gib
-        max_parallel_plots += drive_parallel_plots
-        total_remaining_plotting_drives_space_after_temp_gib += (
-            drive_available_space_after_temp_gib
-        )
+        try:
+            print("Plotting drive %s" % plotting_drive)
+            drive_available_space_gib = psutil.disk_usage(plotting_drive).free / (
+                2 ** 30
+            )
+            drive_parallel_plots = int(drive_available_space_gib / plot_temp_size_gib)
+            drive_available_space_after_temp_gib = (
+                drive_available_space_gib - drive_parallel_plots * plot_temp_size_gib
+            )
+            total_available_plotting_drives_space_gib += drive_available_space_gib
+            max_parallel_plots += drive_parallel_plots
+            total_remaining_plotting_drives_space_after_temp_gib += (
+                drive_available_space_after_temp_gib
+            )
 
-        plotting_drives_capabilities.append(
-            {
-                "plotting_drive": plotting_drive,
-                "total_available_plotting_drives_space_gib": total_available_plotting_drives_space_gib,
-                "drive_parallel_plots": drive_parallel_plots,
-                "drive_available_space_after_temp_gib": drive_available_space_after_temp_gib,
-            }
-        )
+            plotting_drives_capabilities.append(
+                {
+                    "plotting_drive": plotting_drive,
+                    "total_available_plotting_drives_space_gib": total_available_plotting_drives_space_gib,
+                    "drive_parallel_plots": drive_parallel_plots,
+                    "drive_available_space_after_temp_gib": drive_available_space_after_temp_gib,
+                }
+            )
 
-        print("Plotting drive %s" % plotting_drive)
-        print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
-        print("\tParallel plots on this drive: %d" % drive_parallel_plots)
-        print(
-            "\tRemaining space after temp files: %.2f GiB"
-            % drive_available_space_after_temp_gib
-        )
-        print()
+            print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
+            print("\tParallel plots on this drive: %d" % drive_parallel_plots)
+            print(
+                "\tRemaining space after temp files: %.2f GiB"
+                % drive_available_space_after_temp_gib
+            )
+            print()
+        except:
+            print("\tError processing plotting drive %s\n" % plotting_drive)
 
     cumulative_capabilities = {
         "total_available_plotting_drives_space_gib": total_available_plotting_drives_space_gib,
@@ -148,32 +153,40 @@ def retrieve_storage_drives_capabilities(
     total_remaining_space_after_plots_gib = 0
 
     for storage_drive in storage_drives:
-        drive_available_space_gib = psutil.disk_usage(storage_drive).free / (2 ** 30)
-        drive_number_of_plots = int(drive_available_space_gib / plot_final_size_gib)
-        drive_available_space_after_plots_gib = (
-            drive_available_space_gib - drive_number_of_plots * plot_final_size_gib
-        )
-        total_available_storage_drives_space_gib += drive_available_space_gib
-        total_remaining_space_after_plots_gib += drive_available_space_after_plots_gib
-        total_number_of_plots += drive_number_of_plots
+        try:
+            print("Storage drive %s" % storage_drive)
 
-        storage_drives_capabilities.append(
-            {
-                "storage_drive": storage_drive,
-                "drive_available_space_gib": drive_available_space_gib,
-                "drive_number_of_plots": drive_number_of_plots,
-                "drive_available_space_after_plots_gib": drive_available_space_after_plots_gib,
-            }
-        )
+            drive_available_space_gib = psutil.disk_usage(storage_drive).free / (
+                2 ** 30
+            )
+            drive_number_of_plots = int(drive_available_space_gib / plot_final_size_gib)
+            drive_available_space_after_plots_gib = (
+                drive_available_space_gib - drive_number_of_plots * plot_final_size_gib
+            )
+            total_available_storage_drives_space_gib += drive_available_space_gib
+            total_remaining_space_after_plots_gib += (
+                drive_available_space_after_plots_gib
+            )
+            total_number_of_plots += drive_number_of_plots
 
-        print("Storage drive %s" % storage_drive)
-        print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
-        print("\tPossible plots on this drive: %d" % drive_number_of_plots)
-        print(
-            "\tRemaining space after plots: %.2f GiB"
-            % drive_available_space_after_plots_gib
-        )
-        print()
+            storage_drives_capabilities.append(
+                {
+                    "storage_drive": storage_drive,
+                    "drive_available_space_gib": drive_available_space_gib,
+                    "drive_number_of_plots": drive_number_of_plots,
+                    "drive_available_space_after_plots_gib": drive_available_space_after_plots_gib,
+                }
+            )
+
+            print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
+            print("\tPossible plots on this drive: %d" % drive_number_of_plots)
+            print(
+                "\tRemaining space after plots: %.2f GiB"
+                % drive_available_space_after_plots_gib
+            )
+            print()
+        except:
+            print("\tError processing storage drive %s\n" % storage_drive)
 
     cumulative_capabilities = {
         "total_available_storage_drives_space_gib": total_available_storage_drives_space_gib,
@@ -349,7 +362,7 @@ def generate_parallel_processes(
 
 def run(script, executable_location=CHIA_LOCATION):
     print("Launching process: %s" % script)
-    subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
+    # subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
 
 
 if __name__ == "__main__":
