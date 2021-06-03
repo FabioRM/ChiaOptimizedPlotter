@@ -138,7 +138,9 @@ def retrieve_plotting_drives_capabilities(
         "Total available space on plotting drives after temp files: %.2f GiB"
         % total_remaining_plotting_drives_space_after_temp_gib
     )
-    print("Max parallel plotting processes: %d" % max_parallel_plots)
+    print(
+        "Max parallel plotting processes from plotting drives: %d" % max_parallel_plots
+    )
     print()
 
     return cumulative_capabilities, plotting_drives_capabilities
@@ -202,7 +204,7 @@ def retrieve_storage_drives_capabilities(
         "Total available space on storage drives after plots: %.2f GiB"
         % total_remaining_space_after_plots_gib
     )
-    print("Total number of possible plots: %d" % total_number_of_plots)
+    print("Max amount of plots to make: %d" % total_number_of_plots)
     print()
 
     return cumulative_capabilities, storage_drives_capabilities
