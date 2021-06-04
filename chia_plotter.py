@@ -46,7 +46,30 @@ import shutil, psutil
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
 PLOTTING_DRIVES = ["C:/", "D:/"]  # example ["C:/", "D:/"]
-STORAGE_DRIVES = ["E:/", "F:/", "G:/"]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
+STORAGE_DRIVES = [
+    "E:/",
+    "F:/",
+    "G:/",
+    "H:/",
+    "I:/",
+    "J:/",
+    "K:/",
+    "L:/",
+    "M:/",
+    "N:/",
+    "O:/",
+    "P:/",
+    "Q:/",
+    "R:/",
+    "S:/",
+    "T:/",
+    "U:/",
+    "V:/",
+    "W:/",
+    "X:/",
+    "Y:/",
+    "Z:/",
+]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
 CHIA_LOCATION = (
     "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
 )
