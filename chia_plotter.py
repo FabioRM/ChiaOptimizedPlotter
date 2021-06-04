@@ -397,9 +397,11 @@ def generate_parallel_processes(
     }
 
 
-def run(script, executable_location=CHIA_LOCATION):
-    print("Launching process: %s" % script)
-    subprocess.call("start %s" % os.path.join(executable_location, script), shell=True)
+def run(parallel_process, executable_location=CHIA_LOCATION):
+    print("Launching process: %s" % parallel_process)
+    subprocess.call(
+        "start %s" % os.path.join(executable_location, parallel_process), shell=True
+    )
 
 
 if __name__ == "__main__":
@@ -414,8 +416,8 @@ if __name__ == "__main__":
     if parallel_processes == 0:
         sys.exit(0)
 
-    for script in parallel_processes["parallel_processes_commands"]:
-        p = multiprocessing.Process(target=run, args=(script,))
+    for parallel_process in parallel_processes["parallel_processes_commands"]:
+        p = multiprocessing.Process(target=run, args=(parallel_process,))
         p.start()
         time.sleep(PROCESS_INTERVAL_SECONDS)
     p.join()
