@@ -97,7 +97,7 @@ def clean_temporary_folders(
     for plotting_driver in plotting_drives_list:
         for i in range(256):
             possible_folder = os.path.join(
-                plotting_driver, temp_folders_prefix + str(i)
+                plotting_driver, "%s%d" % (temp_folders_prefix, i)
             )
             folders_list.append(possible_folder)
 
@@ -269,7 +269,6 @@ def generate_parallel_processes(
     plotting_drives_capabilities,
     storage_drives_capabilities,
     cpu_ram_capabilities,
-    executable_location=CHIA_LOCATION,
     farmer_key=FARMER_KEY,
     pool_key=POOL_KEY,
     k_factor=K_FACTOR,
@@ -363,7 +362,7 @@ def generate_parallel_processes(
 
     parallel_processes_commands = []
     for i in range(max_parallel_processes):
-        temp_folder = os.path.join(temp_folders[i], "%s%d" % (TEMP_FOLDERS_PREFIX, i))
+        temp_folder = os.path.join(temp_folders[i], "%s%d" % (temp_folder_prefix, i))
         parallel_process_command = (
             "chia plots create -k %d -n %d -r %d -t %s -d %s -f %s -p %s"
             % (
