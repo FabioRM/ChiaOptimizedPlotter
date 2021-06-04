@@ -33,9 +33,11 @@ IF THE SCRIPT FAILS TO LAUNCH:
 ADVANCED USERS:
     feel free to customize the script, keep an eye on the PROCESS_INTERVAL_SECONDS. you can use this variable to
     adapt the interval between one process launch and the next. ideally you should set this equal to the time needed
-    by you hardware to transfer one plot from a plotting drive to a storage drive. this way you will never have more
-    than one transfer at a time and thus shorter periods of waste. rule of thumb:
-        USB 3.0 drives: about 10 minutes (PROCESS_INTERVAL_SECONDS = 600)
+    by you hardware to transfer one plot from a plotting drive to a storage drive. this way your calculator should avoid
+    more than one concurrent transfer per drive, reducing mechanical stress and wasted periods of time.
+    
+    Rule of thumb:
+        [DEFAULT] USB 3.0 drives: about 10 minutes (PROCESS_INTERVAL_SECONDS = 600) 
         USB 2.0 drives: about 40 minutes (PROCESS_INTERVAL_SECONDS = 2400)
 """
 
@@ -45,8 +47,9 @@ import shutil, psutil
 
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
-PLOTTING_DRIVES = ["C:/", "D:/"]  # example ["C:/", "D:/"]
+PLOTTING_DRIVES = ["C:/"]  # example ["C:/", "D:/"]
 STORAGE_DRIVES = [
+    "D:/",
     "E:/",
     "F:/",
     "G:/",
@@ -78,8 +81,8 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 
 
 # constants - only advanced users should change them
-PROCESS_INTERVAL_SECONDS = 0
-TEMP_FOLDERS_PREFIX = "chia_plot_temp"
+PROCESS_INTERVAL_SECONDS = 600
+TEMP_FOLDERS_PREFIX = "chia_plot_temp_"
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 K_FACTOR = 32
@@ -360,20 +363,30 @@ def generate_parallel_processes(
 
     parallel_processes_commands = []
     for i in range(max_parallel_processes):
+        temp_folder = os.path.join(temp_folders[i], "%s%d" % (TEMP_FOLDERS_PREFIX, i))
         parallel_process_command = (
             "chia plots create -k %d -n %d -r %d -t %s -d %s -f %s -p %s"
             % (
                 k_factor,
                 process_plots[i],
                 threads_per_plot,
-                temp_folders[i],
+                temp_folder,
                 dest_folders[i],
                 farmer_key,
                 pool_key,
             )
         )
         parallel_processes_commands.append(parallel_process_command)
-        print("Process %d\t%s" % (i, parallel_process_command))
+        print(
+            "Process %d will produce %d plots in storage drive %s using temporary folder %s\n\tcommand: %s"
+            % (
+                i,
+                process_plots[i],
+                dest_folders[i],
+                temp_folder,
+                parallel_process_command,
+            )
+        )
 
     print()
 
