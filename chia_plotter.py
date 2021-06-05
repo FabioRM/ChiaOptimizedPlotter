@@ -37,8 +37,8 @@ ADVANCED USERS:
     more than one concurrent transfer per drive, reducing mechanical stress and wasted periods of time.
     
     Rule of thumb:
-        [DEFAULT] USB 3.0 drives: about 10 minutes (PROCESS_INTERVAL_SECONDS = 600) 
-        USB 2.0 drives: about 40 minutes (PROCESS_INTERVAL_SECONDS = 2400)
+        [DEFAULT] USB 3.0 drives: about 15 minutes (PROCESS_INTERVAL_SECONDS = 900) 
+        USB 2.0 drives: about 60 minutes (PROCESS_INTERVAL_SECONDS = 3600)
 """
 
 import sys, os, time
@@ -81,7 +81,7 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 
 
 # constants - only advanced users should change them
-PROCESS_INTERVAL_SECONDS = 600
+PROCESS_INTERVAL_SECONDS = 0
 TEMP_FOLDERS_PREFIX = "chia_plot_temp_"
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
