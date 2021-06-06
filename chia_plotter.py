@@ -405,10 +405,9 @@ def generate_parallel_processes(
 
 
 def run(parallel_process, executable_location=CHIA_LOCATION):
-    print("asdfasdf")
-    # subprocess.call(
-    #    "start %s" % os.path.join(executable_location, parallel_process), shell=True
-    # )
+    subprocess.call(
+        "start %s" % os.path.join(executable_location, parallel_process), shell=True
+    )
 
 
 if __name__ == "__main__":
