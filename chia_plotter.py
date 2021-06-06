@@ -426,11 +426,13 @@ if __name__ == "__main__":
         print_debug("Launching process: %s" % parallel_process)
         p = multiprocessing.Process(target=run, args=(parallel_process,))
         p.start()
-        print_debug(
-            "Wait %d seconds before launching the next process"
-            % PROCESS_INTERVAL_SECONDS
-        )
-        time.sleep(PROCESS_INTERVAL_SECONDS)
+
+        print_debug("Next process will launch in %d seconds" % PROCESS_INTERVAL_SECONDS)
+        remaining_time = PROCESS_INTERVAL_SECONDS
+        while remaining_time > 0:
+            print(".", end="", flush=True)
+            time.sleep(10)
+            remaining_time -= 10
     p.join()
 
     print_debug(
