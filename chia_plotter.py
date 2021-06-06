@@ -405,9 +405,10 @@ def generate_parallel_processes(
 
 
 def run(parallel_process, executable_location=CHIA_LOCATION):
-    subprocess.call(
-        "start %s" % os.path.join(executable_location, parallel_process), shell=True
-    )
+    print("asdfasdf")
+    # subprocess.call(
+    #    "start %s" % os.path.join(executable_location, parallel_process), shell=True
+    # )
 
 
 if __name__ == "__main__":
@@ -426,17 +427,18 @@ if __name__ == "__main__":
         print_debug("Launching process: %s" % parallel_process)
         p = multiprocessing.Process(target=run, args=(parallel_process,))
         p.start()
+        p.join()
 
         print_debug("Next process will launch in %d seconds" % PROCESS_INTERVAL_SECONDS)
-        remaining_time = PROCESS_INTERVAL_SECONDS
-        while remaining_time > 0:
+        start_time = time.time()
+        while time.time() - start_time < PROCESS_INTERVAL_SECONDS:
             print(".", end="", flush=True)
-            time.sleep(10)
-            remaining_time -= 10
-    p.join()
+            time.sleep(5)
+        print_debug()
 
+    print_debug()
     print_debug(
-        "\nThe script will now exit, check the processes within their respective shells"
+        "The script will now exit, check the processes within their respective shells"
     )
 
 """
