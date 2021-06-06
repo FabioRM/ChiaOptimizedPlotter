@@ -41,7 +41,7 @@ ADVANCED USERS:
         USB 2.0 drives: about 60 minutes (PROCESS_INTERVAL_SECONDS = 3600)
 """
 
-import sys, os, time
+import sys, os, time, datetime
 import multiprocessing, subprocess
 import shutil, psutil
 
@@ -81,13 +81,20 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 
 
 # constants - only advanced users should change them
-PROCESS_INTERVAL_SECONDS = 0
+PROCESS_INTERVAL_SECONDS = 900
 TEMP_FOLDERS_PREFIX = "chia_plot_temp_"
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 K_FACTOR = 32
 THREADS_PER_PLOT = 2
 RAM_GIB_PER_PLOT = 4000
+
+
+def print_debug(data=None):
+    if data != None:
+        print("[%s]\t" % (datetime.datetime.now()) + data)
+    else:
+        print()
 
 
 def clean_temporary_folders(
@@ -103,7 +110,7 @@ def clean_temporary_folders(
 
     for folder in folders_list:
         if os.path.exists(folder):
-            print("Deleting folder %s" % folder)
+            print_debug("Deleting folder %s" % folder)
             shutil.rmtree(folder)
 
 
@@ -117,7 +124,7 @@ def retrieve_plotting_drives_capabilities(
 
     for plotting_drive in plotting_drives:
         try:
-            print("Plotting drive %s" % plotting_drive)
+            print_debug("Plotting drive %s" % plotting_drive)
             drive_available_space_gib = psutil.disk_usage(plotting_drive).free / (
                 2 ** 30
             )
@@ -140,15 +147,15 @@ def retrieve_plotting_drives_capabilities(
                 }
             )
 
-            print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
-            print("\tParallel plots on this drive: %d" % drive_parallel_plots)
-            print(
+            print_debug("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
+            print_debug("\tParallel plots on this drive: %d" % drive_parallel_plots)
+            print_debug(
                 "\tRemaining space after temp files: %.2f GiB"
                 % drive_available_space_after_temp_gib
             )
-            print()
+            print_debug()
         except:
-            print("\tError processing plotting drive %s\n" % plotting_drive)
+            print_debug("\tError processing plotting drive %s\n" % plotting_drive)
 
     cumulative_capabilities = {
         "total_available_plotting_drives_space_gib": total_available_plotting_drives_space_gib,
@@ -156,18 +163,18 @@ def retrieve_plotting_drives_capabilities(
         "max_parallel_plots": max_parallel_plots,
     }
 
-    print(
+    print_debug(
         "Total available space on plotting drives: %.2f GiB"
         % total_available_plotting_drives_space_gib
     )
-    print(
+    print_debug(
         "Total available space on plotting drives after temp files: %.2f GiB"
         % total_remaining_plotting_drives_space_after_temp_gib
     )
-    print(
+    print_debug(
         "Max parallel plotting processes from plotting drives: %d" % max_parallel_plots
     )
-    print()
+    print_debug()
 
     return cumulative_capabilities, plotting_drives_capabilities
 
@@ -182,7 +189,7 @@ def retrieve_storage_drives_capabilities(
 
     for storage_drive in storage_drives:
         try:
-            print("Storage drive %s" % storage_drive)
+            print_debug("Storage drive %s" % storage_drive)
 
             drive_available_space_gib = psutil.disk_usage(storage_drive).free / (
                 2 ** 30
@@ -206,15 +213,15 @@ def retrieve_storage_drives_capabilities(
                 }
             )
 
-            print("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
-            print("\tPossible plots on this drive: %d" % drive_number_of_plots)
-            print(
+            print_debug("\tAvailable space: %.2f GiB" % (drive_available_space_gib))
+            print_debug("\tPossible plots on this drive: %d" % drive_number_of_plots)
+            print_debug(
                 "\tRemaining space after plots: %.2f GiB"
                 % drive_available_space_after_plots_gib
             )
-            print()
+            print_debug()
         except:
-            print("\tError processing storage drive %s\n" % storage_drive)
+            print_debug("\tError processing storage drive %s\n" % storage_drive)
 
     cumulative_capabilities = {
         "total_available_storage_drives_space_gib": total_available_storage_drives_space_gib,
@@ -222,16 +229,16 @@ def retrieve_storage_drives_capabilities(
         "total_number_of_plots": total_number_of_plots,
     }
 
-    print(
+    print_debug(
         "Total available space on storage drives: %.2f GiB"
         % total_available_storage_drives_space_gib
     )
-    print(
+    print_debug(
         "Total available space on storage drives after plots: %.2f GiB"
         % total_remaining_space_after_plots_gib
     )
-    print("Max amount of plots to make: %d" % total_number_of_plots)
-    print()
+    print_debug("Max amount of plots to make: %d" % total_number_of_plots)
+    print_debug()
 
     return cumulative_capabilities, storage_drives_capabilities
 
@@ -252,15 +259,15 @@ def retrieve_cpu_ram_capabilities(
         "max_calculator_parallel_plotting_processes": max_calculator_parallel_plotting_processes,
     }
 
-    print(
+    print_debug(
         "This calculator has %d logical cores and %d GiB of RAM"
         % (cpu_core_count, total_ram_gib / 2 ** 30)
     )
-    print(
+    print_debug(
         "This calculator can generate %d plots in parallel from CPU and RAM"
         % max_calculator_parallel_plotting_processes
     )
-    print()
+    print_debug()
 
     return calculator_capabilities
 
@@ -287,10 +294,10 @@ def generate_parallel_processes(
     )
 
     if max_parallel_processes == 0:
-        print("Your calculator cannot run a single plotting process")
+        print_debug("Your calculator cannot run a single plotting process")
         return 0
 
-    print(
+    print_debug(
         "Given CPU, RAM and plotting space limitations, this calculator can make %d parallel plots\n"
         % max_parallel_processes
     )
@@ -328,7 +335,7 @@ def generate_parallel_processes(
     process_plots = []
     for storage_drive_assignments in storage_drives_assignments:
         if storage_drive_assignments["assigned_processes"] > 0:
-            print(
+            print_debug(
                 "The storage drive %s will have %d process(es) assigned"
                 % (
                     storage_drive_assignments["storage_drive"],
@@ -350,15 +357,15 @@ def generate_parallel_processes(
                 else:
                     process_plots.append(plots_per_process)
         else:
-            print(
+            print_debug(
                 "The storage drive %s will have no process assigned"
                 % storage_drive_assignments["storage_drive"]
             )
-    print()
+    print_debug()
 
-    # print(temp_folders)
-    # print(dest_folders)
-    # print(process_plots)
+    # print_debug(temp_folders)
+    # print_debug(dest_folders)
+    # print_debug(process_plots)
 
     parallel_processes_commands = []
     for i in range(max_parallel_processes):
@@ -376,7 +383,7 @@ def generate_parallel_processes(
             )
         )
         parallel_processes_commands.append(parallel_process_command)
-        print(
+        print_debug(
             "Process %d will produce %d plots in storage drive %s using temporary folder %s\n\tcommand: %s"
             % (
                 i,
@@ -387,7 +394,7 @@ def generate_parallel_processes(
             )
         )
 
-    print()
+    print_debug()
 
     return {
         "parallel_processes_commands": parallel_processes_commands,
@@ -398,7 +405,6 @@ def generate_parallel_processes(
 
 
 def run(parallel_process, executable_location=CHIA_LOCATION):
-    print("Launching process: %s" % parallel_process)
     subprocess.call(
         "start %s" % os.path.join(executable_location, parallel_process), shell=True
     )
@@ -417,18 +423,23 @@ if __name__ == "__main__":
         sys.exit(0)
 
     for parallel_process in parallel_processes["parallel_processes_commands"]:
+        print_debug("Launching process: %s" % parallel_process)
         p = multiprocessing.Process(target=run, args=(parallel_process,))
         p.start()
+        print_debug(
+            "Wait %d seconds before launching the next process"
+            % PROCESS_INTERVAL_SECONDS
+        )
         time.sleep(PROCESS_INTERVAL_SECONDS)
     p.join()
 
-    print(
+    print_debug(
         "\nThe script will now exit, check the processes within their respective shells"
     )
 
 """
-print(plotting_drives_capabilities)
-print(storage_drives_capabilities)
-print(cpu_ram_capabilities)
-print(parallel_processes)
+print_debug(plotting_drives_capabilities)
+print_debug(storage_drives_capabilities)
+print_debug(cpu_ram_capabilities)
+print_debug(parallel_processes)
 """
