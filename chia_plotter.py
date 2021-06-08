@@ -20,7 +20,7 @@ HOW TO USE THE SCRIPT:
     1 - configure the script setting up 5 constants:
         - PLOTTING_DRIVES
         - STORAGE_DRIVES
-        - CHIA_LOCATION
+        - CHIA_LOCATION (it depends also on the version of CHIA you have installed)
         - FARMER_KEY
         - POOL_KEY
     2 - run the script
@@ -74,7 +74,7 @@ STORAGE_DRIVES = [
     "Z:/",
 ]  # example ["E:/", "F:/", "G:/", "H:/", "I:/"]
 CHIA_LOCATION = (
-    "%APPDATA%/../Local/chia-blockchain/app-1.1.6/resources/app.asar.unpacked/daemon/"
+    "%APPDATA%/../Local/chia-blockchain/app-1.1.7/resources/app.asar.unpacked/daemon/"
 )
 FARMER_KEY = "a3d6fd875db16e7ccc98ffda929779c1abf9ae852674c5ec7de630defa73852894f131620dafc33874408c8e842ad606"
 POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e25008587845317fe24fffbfe3182"
