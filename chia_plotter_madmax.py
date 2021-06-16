@@ -43,7 +43,7 @@ ADVANCED USERS:
 
 import sys, os, time, datetime
 import multiprocessing, subprocess
-import shutil, psutil
+import shutil, psutil, glob
 
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
@@ -86,6 +86,7 @@ COMBINED_DIR_MIN_AVAILABLE_SPACE = 256
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 RAM_MIB_PER_THREAD = 512
+CHECKING_INTERVAL = 300
 
 
 def print_debug(data=None):
@@ -307,7 +308,6 @@ def run(parallel_process):
 
 if __name__ == "__main__":
     clean_temporary_folders()
-    storage_drives_capabilities = retrieve_storage_drives_capabilities()
     cpu_ram_capabilities = retrieve_cpu_ram_capabilities()
     command_to_run = generate_command_to_run(
         storage_drives_capabilities, cpu_ram_capabilities
@@ -321,12 +321,21 @@ if __name__ == "__main__":
     p.join()
 
     while True:
-        time.sleep(1)
-        print_debug("A")
-
-"""
-print_debug(plotting_drives_capabilities)
-print_debug(storage_drives_capabilities)
-print_debug(cpu_ram_capabilities)
-print_debug(parallel_processes)
-"""
+        storage_drives_capabilities = retrieve_storage_drives_capabilities()
+        fileList = glob.glob(os.path.join(DESTINATION_TEMPORARY_DIRECTORY, "*.plot"))
+        if len(fileList) == 0:
+            print_debug(
+                "No new plot to move. Checking again in %d seconds" % CHECKING_INTERVAL
+            )
+            time.sleep(CHECKING_INTERVAL)
+        else:
+            for f in fileList:
+                storage_drives_assignments = sorted(
+                    storage_drives_capabilities[1],
+                    key=lambda x: x["drive_number_of_plots"],
+                    reverse=True,
+                )
+                destination_folder = storage_drives_assignments[0]["storage_drive"]
+                print_debug("Moving plot %s to %s" % (f, destination_folder))
+                shutil.move(f, destination_folder)
+                print_debug("\tmove done")
