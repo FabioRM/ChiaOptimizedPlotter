@@ -47,9 +47,9 @@ import shutil, psutil, glob
 
 # configuration constants. these MUST be configured according to your mining machine, the chia software installed
 # and also the ssds and hdds installed
-PLOTTING_SLOW_DIRECTORY = "C:/chia/temp_slow"
-PLOTTING_FAST_DIRECTORY = "C:/chia/temp_fast"
-DESTINATION_TEMPORARY_DIRECTORY = "C:/chia"
+PLOTTING_SLOW_DRIVE = "C:/"
+PLOTTING_FAST_DRIVE = "C:/"
+DESTINATION_TEMPORARY_DRIVE = "C:/"
 STORAGE_DRIVES = [
     "D:/",
     "E:/",
@@ -82,7 +82,7 @@ POOL_KEY = "ae6c61298964c91bbf1ab2b37dece103406ce8012b938f0edddd8ed53074790b839e
 # constants - only advanced users should change them
 SLOW_DIR_MIN_AVAILABLE_SPACE = 220
 FAST_DIR_MIN_AVAILABLE_SPACE = 110
-COMBINED_DIR_MIN_AVAILABLE_SPACE = 256
+COMBINED_DIR_MIN_AVAILABLE_SPACE = 150  # 256
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
 RAM_MIB_PER_THREAD = 512
@@ -97,80 +97,144 @@ def print_debug(data=None):
 
 
 def clean_temporary_folders(
-    plotting_slow_directory=PLOTTING_SLOW_DIRECTORY,
-    plotting_fast_directory=PLOTTING_FAST_DIRECTORY,
+    plotting_slow_drive=PLOTTING_SLOW_DRIVE,
+    plotting_fast_drive=PLOTTING_FAST_DRIVE,
 ):
+    plotting_slow_directory = os.path.join(plotting_slow_drive, "chia", "temp_slow")
     if os.path.exists(plotting_slow_directory):
         print_debug("Deleting folder %s" % plotting_slow_directory)
         shutil.rmtree(plotting_slow_directory)
 
+    plotting_fast_directory = os.path.join(plotting_fast_drive, "chia", "temp_fast")
     if os.path.exists(plotting_fast_directory):
         print_debug("Deleting folder %s" % plotting_fast_directory)
         shutil.rmtree(plotting_fast_directory)
 
 
 def check_directories_available_space(
-    plotting_slow_directory=PLOTTING_SLOW_DIRECTORY,
-    plotting_fast_directory=PLOTTING_FAST_DIRECTORY,
-    destination_temporary_directory=DESTINATION_TEMPORARY_DIRECTORY,
+    plotting_slow_drive=PLOTTING_SLOW_DRIVE,
+    plotting_fast_drive=PLOTTING_FAST_DRIVE,
+    destination_temporary_drive=DESTINATION_TEMPORARY_DRIVE,
 ):
-    can_run = True
-
-    if plotting_slow_directory.split(":")[0] == plotting_fast_directory.split(":")[0]:
+    if plotting_slow_drive == plotting_fast_drive == destination_temporary_drive:
         try:
-            print_debug("plotting directory %s" % plotting_slow_directory)
-            drive_available_space_gib = psutil.disk_usage(
-                plotting_slow_directory
-            ).free / (2 ** 30)
+            print_debug(
+                "plotting drive for both slow and fast %s" % plotting_slow_drive
+            )
+            drive_available_space_gib = psutil.disk_usage(plotting_slow_drive).free / (
+                2 ** 30
+            )
+
+            if drive_available_space_gib < (
+                COMBINED_DIR_MIN_AVAILABLE_SPACE + PLOT_FINAL_SIZE_GIB
+            ):
+                print_debug(
+                    "plotting_slow_drive == plotting_fast_drive == destination_temporary_drive"
+                )
+                return False
+            else:
+                return True
+        except:
+            print_debug(
+                "\tError processing plotting directory %s\n" % plotting_slow_drive
+            )
+
+    if plotting_slow_drive == plotting_fast_drive:
+        try:
+            print_debug(
+                "plotting drive for both slow and fast %s" % plotting_slow_drive
+            )
+            drive_available_space_gib = psutil.disk_usage(plotting_slow_drive).free / (
+                2 ** 30
+            )
+
             if drive_available_space_gib < COMBINED_DIR_MIN_AVAILABLE_SPACE:
-                can_run = False
+                print_debug("plotting_slow_drive == plotting_fast_drive")
+                return False
         except:
             print_debug(
-                "\tError processing plotting directory %s\n" % plotting_slow_directory
-            )
-    else:
-        try:
-            print_debug("plotting_slow_directory %s" % plotting_slow_directory)
-            drive_available_space_gib = psutil.disk_usage(
-                plotting_slow_directory
-            ).free / (2 ** 30)
-            if drive_available_space_gib < SLOW_DIR_MIN_AVAILABLE_SPACE:
-                can_run = False
-        except:
-            print_debug(
-                "\tError processing plotting_slow_directory %s\n"
-                % plotting_slow_directory
+                "\tError processing plotting directory %s\n" % plotting_slow_drive
             )
 
+    if plotting_slow_drive == destination_temporary_drive:
         try:
-            print_debug("plotting_fast_directory %s" % plotting_fast_directory)
-            drive_available_space_gib = psutil.disk_usage(
-                plotting_fast_directory
-            ).free / (2 ** 30)
-            if drive_available_space_gib < FAST_DIR_MIN_AVAILABLE_SPACE:
-                can_run = False
+            print_debug(
+                "plotting drive for both slow and fast %s" % plotting_slow_drive
+            )
+            drive_available_space_gib = psutil.disk_usage(plotting_slow_drive).free / (
+                2 ** 30
+            )
+
+            if drive_available_space_gib < (
+                SLOW_DIR_MIN_AVAILABLE_SPACE + PLOT_FINAL_SIZE_GIB
+            ):
+                print_debug("plotting_slow_drive == destination_temporary_drive")
+                return False
         except:
             print_debug(
-                "\tError processing plotting_fast_directory %s\n"
-                % plotting_fast_directory
+                "\tError processing plotting directory %s\n" % plotting_slow_drive
+            )
+
+    if plotting_fast_drive == destination_temporary_drive:
+        try:
+            print_debug(
+                "plotting drive for both slow and fast %s" % plotting_fast_drive
+            )
+            drive_available_space_gib = psutil.disk_usage(plotting_fast_drive).free / (
+                2 ** 30
+            )
+
+            if drive_available_space_gib < (
+                FAST_DIR_MIN_AVAILABLE_SPACE + PLOT_FINAL_SIZE_GIB
+            ):
+                print_debug("plotting_fast_drive == destination_temporary_drive")
+                return False
+        except:
+            print_debug(
+                "\tError processing plotting directory %s\n" % plotting_fast_drive
             )
 
     try:
-        print_debug(
-            "destination_temporary_directory %s" % destination_temporary_directory
+        print_debug("plotting_slow_directory %s" % plotting_slow_drive)
+        drive_available_space_gib = psutil.disk_usage(plotting_slow_drive).free / (
+            2 ** 30
         )
+        if drive_available_space_gib < SLOW_DIR_MIN_AVAILABLE_SPACE:
+            print_debug("drive_available_space_gib < SLOW_DIR_MIN_AVAILABLE_SPACE")
+            return False
+    except:
+        print_debug(
+            "\tError processing plotting_slow_directory %s\n" % plotting_slow_drive
+        )
+
+    try:
+        print_debug("plotting_fast_directory %s" % plotting_fast_drive)
+        drive_available_space_gib = psutil.disk_usage(plotting_fast_drive).free / (
+            2 ** 30
+        )
+        if drive_available_space_gib < FAST_DIR_MIN_AVAILABLE_SPACE:
+            print_debug("drive_available_space_gib < FAST_DIR_MIN_AVAILABLE_SPACE")
+            return False
+    except:
+        print_debug(
+            "\tError processing plotting_fast_directory %s\n" % plotting_fast_drive
+        )
+
+    try:
+        print_debug("destination_temporary_directory %s" % destination_temporary_drive)
         drive_available_space_gib = psutil.disk_usage(
-            destination_temporary_directory
+            destination_temporary_drive
         ).free / (2 ** 30)
         if drive_available_space_gib < PLOT_FINAL_SIZE_GIB:
-            can_run = False
+            print_debug("drive_available_space_gib < PLOT_FINAL_SIZE_GIB")
+            return False
     except:
         print_debug(
             "\tError processing destination_temporary_directory %s\n"
-            % destination_temporary_directory
+            % destination_temporary_drive
         )
 
-    return can_run
+    return True
 
 
 def retrieve_storage_drives_capabilities(
@@ -269,9 +333,9 @@ def generate_command_to_run(
     cpu_ram_capabilities,
     farmer_key=FARMER_KEY,
     pool_key=POOL_KEY,
-    plotting_slow_directory=PLOTTING_SLOW_DIRECTORY,
-    plotting_fast_directory=PLOTTING_FAST_DIRECTORY,
-    destination_temporary_directory=DESTINATION_TEMPORARY_DIRECTORY,
+    plotting_slow_drive=PLOTTING_SLOW_DRIVE,
+    plotting_fast_drive=PLOTTING_FAST_DRIVE,
+    destination_temporary_drive=DESTINATION_TEMPORARY_DRIVE,
     madmax_chia_plotter_location=MADMAX_CHIA_PLOTTER_LOCATION,
 ):
     number_of_plots_to_do = storage_drives_capabilities[0]["total_number_of_plots"]
@@ -292,9 +356,9 @@ def generate_command_to_run(
         madmax_chia_plotter_location,
         number_of_plots_to_do,
         max_parallel_threads,
-        plotting_slow_directory,
-        plotting_fast_directory,
-        destination_temporary_directory,
+        os.path.join(plotting_slow_drive, "chia", "temp_slow"),
+        os.path.join(plotting_fast_drive, "chia", "temp_fast"),
+        os.path.join(destination_temporary_drive, "chia"),
         farmer_key,
         pool_key,
     )
@@ -310,6 +374,8 @@ def run(parallel_process):
 
 if __name__ == "__main__":
     clean_temporary_folders()
+    if check_directories_available_space() == False:
+        sys.exit(0)
     storage_drives_capabilities = retrieve_storage_drives_capabilities()
     cpu_ram_capabilities = retrieve_cpu_ram_capabilities()
     command_to_run = generate_command_to_run(
@@ -325,7 +391,9 @@ if __name__ == "__main__":
 
     while True:
         storage_drives_capabilities = retrieve_storage_drives_capabilities()
-        fileList = glob.glob(os.path.join(DESTINATION_TEMPORARY_DIRECTORY, "*.plot"))
+        fileList = glob.glob(
+            os.path.join(os.path.join(DESTINATION_TEMPORARY_DRIVE, "chia"), "*.plot")
+        )
         if len(fileList) == 0:
             print_debug(
                 "No new plot to move. Checking again in %d seconds" % CHECKING_INTERVAL
