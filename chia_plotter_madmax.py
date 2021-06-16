@@ -12,33 +12,23 @@ It works as follows:
     2 - evaluate the amount of free space into the plotting drives (they should be fast SSDs)
     3 - evaluate the amount of free space into the storage drives (for plots storage)
     4 - evaluate CPU and RAM capabilities (number of cores, available RAM)
-    5 - generate the correct number of processes and their launch commands
+    5 - generate the correct number of parameters and the madmax launch commands
     6 - open a shell for each process and run it
-    7 - done
+    7 - loops looking for finished plots to move to storage drives without interfering with the plotting
 
 HOW TO USE THE SCRIPT:
-    1 - configure the script setting up 5 constants:
-        - PLOTTING_DRIVES
+    1 - configure the script setting up 7 constants:
+        - PLOTTING_SLOW_DRIVE (at least 220 GiB)
+        - PLOTTING_FAST_DRIVE (ideally ramdisk, at least 110 GiB)
+        - DESTINATION_TEMPORARY_DRIVE (the drive where to move the finished plot waiting for the final relocation)
         - STORAGE_DRIVES
-        - CHIA_LOCATION (it depends also on the version of CHIA you have installed)
+        - MADMAX_CHIA_LOCATION
         - FARMER_KEY
         - POOL_KEY
     2 - run the script
-    3 - check the plotting progress from the shells
-    4 - done
 
 IF THE SCRIPT FAILS TO LAUNCH:
     check the console output, keep in mind that possibly you need to install some dependencies (like shutil, psutil)
-
-ADVANCED USERS:
-    feel free to customize the script, keep an eye on the PROCESS_INTERVAL_SECONDS. you can use this variable to
-    adapt the interval between one process launch and the next. ideally you should set this equal to the time needed
-    by you hardware to transfer one plot from a plotting drive to a storage drive. this way your calculator should avoid
-    more than one concurrent transfer per drive, reducing mechanical stress and wasted periods of time.
-    
-    Rule of thumb:
-        [DEFAULT] USB 3.0 drives: about 15 minutes (PROCESS_INTERVAL_SECONDS = 900) 
-        USB 2.0 drives: about 60 minutes (PROCESS_INTERVAL_SECONDS = 3600)
 """
 
 import sys, os, time, datetime
@@ -84,7 +74,7 @@ SLOW_DIR_MIN_AVAILABLE_SPACE = 220
 FAST_DIR_MIN_AVAILABLE_SPACE = 110
 COMBINED_DIR_MIN_AVAILABLE_SPACE = 150  # 256
 PLOT_TEMP_SIZE_GIB = 239
-PLOT_FINAL_SIZE_GIB = 101.3
+PLOT_FINAL_SIZE_GIB = 10.13
 RAM_MIB_PER_THREAD = 512
 CHECKING_INTERVAL = 300
 
