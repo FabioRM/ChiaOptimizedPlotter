@@ -85,7 +85,7 @@ FAST_DIR_MIN_AVAILABLE_SPACE = 110
 COMBINED_DIR_MIN_AVAILABLE_SPACE = 256
 PLOT_TEMP_SIZE_GIB = 239
 PLOT_FINAL_SIZE_GIB = 101.3
-RAM_GIB_PER_PLOT = 4000
+RAM_MIB_PER_THREAD = 512
 
 
 def print_debug(data=None):
@@ -236,13 +236,11 @@ def retrieve_storage_drives_capabilities(
     return cumulative_capabilities, storage_drives_capabilities
 
 
-def retrieve_cpu_ram_capabilities(
-    threads_per_plot=THREADS_PER_PLOT, ram_gib_per_plot=RAM_GIB_PER_PLOT
-):
+def retrieve_cpu_ram_capabilities(ram_mib_per_thread=RAM_MIB_PER_THREAD):
     cpu_core_count = multiprocessing.cpu_count()
     total_ram_gib = psutil.virtual_memory().total
-    max_cpu_parallel_capabilities = int(cpu_core_count / threads_per_plot)
-    max_ram_parallel_capabilities = int(total_ram_gib / ram_gib_per_plot)
+    max_cpu_parallel_capabilities = cpu_core_count
+    max_ram_parallel_capabilities = int(total_ram_gib / ram_mib_per_thread)
     max_calculator_parallel_plotting_processes = min(
         max_cpu_parallel_capabilities, max_ram_parallel_capabilities
     )
@@ -265,173 +263,66 @@ def retrieve_cpu_ram_capabilities(
     return calculator_capabilities
 
 
-def generate_parallel_processes(
+def generate_command_to_run(
     storage_drives_capabilities,
     cpu_ram_capabilities,
     farmer_key=FARMER_KEY,
     pool_key=POOL_KEY,
-    threads_per_plot=THREADS_PER_PLOT,
     plotting_slow_directory=PLOTTING_SLOW_DIRECTORY,
     plotting_fast_directory=PLOTTING_FAST_DIRECTORY,
     destination_temporary_directory=DESTINATION_TEMPORARY_DIRECTORY,
+    madmax_chia_plotter_location=MADMAX_CHIA_PLOTTER_LOCATION,
 ):
     number_of_plots_to_do = storage_drives_capabilities[0]["total_number_of_plots"]
-    max_parallel_plots_plotting_devices = plotting_drives_capabilities[0][
-        "max_parallel_plots"
-    ]
-    max_parallel_plots_calculator = cpu_ram_capabilities[
+    max_parallel_threads = cpu_ram_capabilities[
         "max_calculator_parallel_plotting_processes"
     ]
-    max_parallel_processes = min(
-        max_parallel_plots_plotting_devices, max_parallel_plots_calculator
-    )
 
-    if max_parallel_processes == 0:
+    if max_parallel_threads == 0:
         print_debug("Your calculator cannot run a single plotting process")
         return 0
 
     print_debug(
-        "Given CPU, RAM and plotting space limitations, this calculator can make %d parallel plots\n"
-        % max_parallel_processes
+        "Given CPU and RAM constraints, this calculator can run %d parallel threads for the plotting\n"
+        % max_parallel_threads
     )
 
-    # assign processes for each storage devices, they must be proportional to the free space available
-    for storage_drive_capabilities in storage_drives_capabilities[1]:
-        storage_drive_capabilities["percentage_of_plots"] = (
-            storage_drive_capabilities["drive_number_of_plots"] / number_of_plots_to_do
-        )
-        storage_drive_capabilities["assigned_processes"] = 0
-
-    storage_drives_assignments = storage_drives_capabilities[1]
-    current_process = 0
-    while current_process < max_parallel_processes:
-        storage_drives_assignments = sorted(
-            storage_drives_assignments,
-            key=lambda x: x["drive_number_of_plots"] / (x["assigned_processes"] + 1),
-            reverse=True,
-        )
-        storage_drives_assignments[0]["assigned_processes"] += 1
-        current_process += 1
-
-    # calculate temp plotting folders
-    temp_folders = []
-    counter = 0
-    while len(temp_folders) < max_parallel_processes:
-        j = counter % len(plotting_drives_capabilities[1])
-        if plotting_drives_capabilities[1][j]["drive_parallel_plots"] > 0:
-            plotting_drives_capabilities[1][j]["drive_parallel_plots"] -= 1
-            temp_folders.append(plotting_drives_capabilities[1][j]["plotting_drive"])
-        counter += 1
-
-    # calculate destination folders and number of plots per process
-    dest_folders = []
-    process_plots = []
-    for storage_drive_assignments in storage_drives_assignments:
-        if storage_drive_assignments["assigned_processes"] > 0:
-            print_debug(
-                "The storage drive %s will have %d process(es) assigned"
-                % (
-                    storage_drive_assignments["storage_drive"],
-                    storage_drive_assignments["assigned_processes"],
-                )
-            )
-            plots_per_process = int(
-                storage_drive_assignments["drive_number_of_plots"]
-                / storage_drive_assignments["assigned_processes"]
-            )
-            remaining_plots = int(
-                storage_drive_assignments["drive_number_of_plots"]
-                % storage_drive_assignments["assigned_processes"]
-            )
-            for process in range(storage_drive_assignments["assigned_processes"]):
-                dest_folders.append(storage_drive_assignments["storage_drive"])
-                if process < remaining_plots:
-                    process_plots.append(plots_per_process + 1)
-                else:
-                    process_plots.append(plots_per_process)
-        else:
-            print_debug(
-                "The storage drive %s will have no process assigned"
-                % storage_drive_assignments["storage_drive"]
-            )
-    print_debug()
-
-    # print_debug(temp_folders)
-    # print_debug(dest_folders)
-    # print_debug(process_plots)
-
-    parallel_processes_commands = []
-    for i in range(max_parallel_processes):
-        temp_folder = os.path.join(temp_folders[i], "%s%d" % (temp_folder_prefix, i))
-        parallel_process_command = (
-            "chia plots create -k %d -n %d -r %d -t %s -d %s -f %s -p %s"
-            % (
-                k_factor,
-                process_plots[i],
-                threads_per_plot,
-                temp_folder,
-                dest_folders[i],
-                farmer_key,
-                pool_key,
-            )
-        )
-        parallel_processes_commands.append(parallel_process_command)
-        print_debug(
-            "Process %d will produce %d plots in storage drive %s using temporary folder %s\n\tcommand: %s"
-            % (
-                i,
-                process_plots[i],
-                dest_folders[i],
-                temp_folder,
-                parallel_process_command,
-            )
-        )
-
-    print_debug()
-
-    return {
-        "parallel_processes_commands": parallel_processes_commands,
-        "single_process_plots": process_plots,
-        "temp_folders": temp_folders,
-        "dest_folders": dest_folders,
-    }
-
-
-def run(parallel_process, executable_location=CHIA_LOCATION):
-    subprocess.call(
-        "start %s" % os.path.join(executable_location, parallel_process), shell=True
+    madmax_process_command = "%s -n %d -r %d -t %s -2 %s -d %s -f %s -p %s" % (
+        madmax_chia_plotter_location,
+        number_of_plots_to_do,
+        max_parallel_threads,
+        plotting_slow_directory,
+        plotting_fast_directory,
+        destination_temporary_directory,
+        farmer_key,
+        pool_key,
     )
+
+    return madmax_process_command
+
+
+def run(parallel_process):
+    subprocess.call("start %s" % parallel_process, shell=True)
 
 
 if __name__ == "__main__":
     clean_temporary_folders()
-    plotting_drives_capabilities = retrieve_plotting_drives_capabilities()
     storage_drives_capabilities = retrieve_storage_drives_capabilities()
     cpu_ram_capabilities = retrieve_cpu_ram_capabilities()
-    parallel_processes = generate_parallel_processes(
-        plotting_drives_capabilities, storage_drives_capabilities, cpu_ram_capabilities
+    command_to_run = generate_command_to_run(
+        storage_drives_capabilities, cpu_ram_capabilities
     )
 
-    if parallel_processes == 0:
+    if command_to_run == 0:
         sys.exit(0)
 
-    for parallel_process in parallel_processes["parallel_processes_commands"]:
-        print_debug("Launching process: %s" % parallel_process)
-        p = multiprocessing.Process(target=run, args=(parallel_process,))
-        p.start()
-        p.join()
+    p = multiprocessing.Process(target=run, args=(command_to_run,))
+    p.start()
+    p.join()
 
-        print_debug("Next process will launch in %d seconds" % PROCESS_INTERVAL_SECONDS)
-        start_time = time.time()
-        while time.time() - start_time < PROCESS_INTERVAL_SECONDS:
-            print(".", end="", flush=True)
-            time.sleep(5)
-        print_debug()
-
-    print_debug()
-    print_debug(
-        "The script will now exit, check the processes within their respective shells"
-    )
+    while True:
+        time.sleep(1)
+        print_debug("A")
 
 """
 print_debug(plotting_drives_capabilities)
