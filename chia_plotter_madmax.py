@@ -299,6 +299,8 @@ def generate_command_to_run(
         pool_key,
     )
 
+    print_debug("Command to run:\t%s" % madmax_process_command)
+
     return madmax_process_command
 
 
@@ -308,6 +310,7 @@ def run(parallel_process):
 
 if __name__ == "__main__":
     clean_temporary_folders()
+    storage_drives_capabilities = retrieve_storage_drives_capabilities()
     cpu_ram_capabilities = retrieve_cpu_ram_capabilities()
     command_to_run = generate_command_to_run(
         storage_drives_capabilities, cpu_ram_capabilities
